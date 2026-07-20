@@ -1,16 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Timer, X } from "lucide-react";
-import { PriorityBadge } from "@/components/priority-badge";
+import { HistoryPointsChart } from "@/components/history-points-chart";
+import { HistoryTodoItem } from "@/components/history-todo-item";
 import { createClient } from "@/lib/supabase/client";
-import { fetchDailyScoresWithItems, type DailyScoreWithItems } from "@/lib/scores";
+import type { ScoreHistoryRange } from "@/lib/dates";
+import {
+  buildHistoryChartData,
+  fetchTodosInRange,
+  groupTodosByDay,
+  sumTodoPoints,
+  type TodosByDay,
+} from "@/lib/history-todos";
+import type { Todo } from "@/lib/types";
 
 type ScoreHistoryButtonProps = {
   userId: string;
 };
 
-function formatScoreDate(date: string) {
+const RANGE_OPTIONS: { label: string; value: ScoreHistoryRange }[] = [
+  { label: "1D", value: 1 },
+  { label: "7D", value: 7 },
+  { label: "30D", value: 30 },
+];
+
+function formatHistoryDate(date: string) {
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
@@ -20,9 +36,10 @@ function formatScoreDate(date: string) {
 }
 
 export function ScoreHistoryButton({ userId }: ScoreHistoryButtonProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [scores, setScores] = useState<DailyScoreWithItems[]>([]);
+  const [range, setRange] = useState<ScoreHistoryRange>(7);
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,40 +48,55 @@ export function ScoreHistoryButton({ userId }: ScoreHistoryButtonProps) {
 
     let cancelled = false;
 
-    async function loadScores() {
+    async function loadTodos() {
       setLoading(true);
       setError(null);
 
       const supabase = createClient();
-      const { data, error: fetchError } = await fetchDailyScoresWithItems(
+      const { data, error: fetchError } = await fetchTodosInRange(
         supabase,
         userId,
+        range,
       );
 
       if (cancelled) return;
 
       if (fetchError) {
         setError(fetchError);
-        setScores([]);
+        setTodos([]);
       } else {
-        setScores(data);
+        setTodos(data);
       }
 
       setLoading(false);
     }
 
-    void loadScores();
+    void loadTodos();
 
     return () => {
       cancelled = true;
     };
-  }, [open, userId]);
+  }, [open, userId, range]);
+
+  const days: TodosByDay[] = useMemo(() => groupTodosByDay(todos), [todos]);
+  const totalPoints = useMemo(() => sumTodoPoints(todos), [todos]);
+  const chartData = useMemo(
+    () => buildHistoryChartData(todos, range),
+    [todos, range],
+  );
+  const rangeLabel =
+    RANGE_OPTIONS.find((option) => option.value === range)?.label ?? `${range}D`;
+
+  const handleDeleted = (todoId: string) => {
+    setTodos((current) => current.filter((todo) => todo.id !== todoId));
+    router.refresh();
+  };
 
   return (
     <>
       <button
         type="button"
-        aria-label="Daily scores"
+        aria-label="Todo history"
         onClick={() => setOpen(true)}
         className="rounded-full p-2 text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
       >
@@ -77,104 +109,90 @@ export function ScoreHistoryButton({ userId }: ScoreHistoryButtonProps) {
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  Daily scores
+                  Previous todos
                 </h2>
                 <p className="text-sm text-gray-400">
-                  Low 3 · Medium 5 · High 8 points
+                  Points by priority · Low 3 · Medium 5 · High 8
                 </p>
               </div>
               <button
                 type="button"
                 aria-label="Close"
-                onClick={() => {
-                  setOpen(false);
-                  setExpandedId(null);
-                }}
+                onClick={() => setOpen(false)}
                 className="rounded-full p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600"
               >
                 <X className="h-5 w-5" strokeWidth={1.75} />
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+            <div className="shrink-0 space-y-3 border-b border-gray-100 px-5 py-3">
+              <div className="flex rounded-xl bg-slate-100 p-1">
+                {RANGE_OPTIONS.map((option) => {
+                  const active = range === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setRange(option.value)}
+                      className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                        active
+                          ? "bg-white text-gray-900 shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {!loading && !error ? (
+                <HistoryPointsChart
+                  data={chartData}
+                  totalPoints={totalPoints}
+                  rangeLabel={rangeLabel}
+                />
+              ) : null}
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {loading ? (
-                <p className="text-sm text-gray-400">Loading scores...</p>
+                <p className="text-sm text-gray-400">Loading todos...</p>
               ) : error ? (
                 <p className="text-sm text-red-500">{error}</p>
-              ) : scores.length === 0 ? (
+              ) : days.length === 0 ? (
                 <p className="text-sm text-gray-400">
-                  No daily scores yet. Completed todos are scored each night.
+                  {range === 1
+                    ? "No todos from yesterday."
+                    : `No todos in the last ${range} days.`}
                 </p>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {scores.map((score) => {
-                    const expanded = expandedId === score.id;
-
-                    return (
-                      <div
-                        key={score.id}
-                        className="overflow-hidden rounded-2xl ring-1 ring-black/[0.04]"
-                      >
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setExpandedId(expanded ? null : score.id)
-                          }
-                          className="flex w-full items-center justify-between bg-slate-50 px-4 py-4 text-left transition hover:bg-slate-100"
-                        >
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              {formatScoreDate(score.score_date)}
-                            </p>
-                            <p className="mt-0.5 text-sm text-gray-500">
-                              {score.tasks_completed} task
-                              {score.tasks_completed === 1 ? "" : "s"} completed
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-blue-500">
-                              {score.total_points}
-                            </p>
-                            <p className="text-xs text-gray-400">points</p>
-                          </div>
-                        </button>
-
-                        {expanded ? (
-                          <div className="space-y-2 border-t border-gray-100 bg-white px-4 py-3">
-                            {score.daily_score_items.length === 0 ? (
-                              <p className="text-sm text-gray-400">
-                                No completed tasks recorded for this day.
-                              </p>
-                            ) : (
-                              score.daily_score_items.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="rounded-xl bg-slate-50 px-3 py-3"
-                                >
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="min-w-0">
-                                      <p className="truncate text-sm font-semibold text-gray-900">
-                                        {item.title}
-                                      </p>
-                                      <p className="mt-0.5 text-xs text-gray-400">
-                                        {item.label}
-                                      </p>
-                                      <div className="mt-2">
-                                        <PriorityBadge priority={item.priority} />
-                                      </div>
-                                    </div>
-                                    <p className="shrink-0 text-sm font-semibold text-blue-500">
-                                      +{item.points}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        ) : null}
+                <div className="flex flex-col gap-5">
+                  {days.map((day) => (
+                    <section key={day.date} className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-semibold text-gray-500">
+                          {formatHistoryDate(day.date)}
+                          <span className="ml-2 font-normal text-gray-400">
+                            {day.todos.length} todo
+                            {day.todos.length === 1 ? "" : "s"}
+                          </span>
+                        </h3>
+                        <p className="text-sm font-semibold text-blue-500">
+                          {day.points} pts
+                        </p>
                       </div>
-                    );
-                  })}
+                      {day.todos.map((todo) => (
+                        <HistoryTodoItem
+                          key={todo.id}
+                          todo={todo}
+                          userId={userId}
+                          onDeleted={handleDeleted}
+                        />
+                      ))}
+                    </section>
+                  ))}
                 </div>
               )}
             </div>

@@ -134,6 +134,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      todo_comments: {
+        Row: {
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          todo_id: string;
+        };
+        Insert: {
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          todo_id: string;
+        };
+        Update: {
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          todo_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "todo_comments_todo_id_fkey";
+            columns: ["todo_id"];
+            isOneToOne: false;
+            referencedRelation: "todos";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

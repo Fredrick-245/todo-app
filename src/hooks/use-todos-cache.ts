@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AppMember } from "@/lib/allowed-users";
 import { createClient } from "@/lib/supabase/client";
+import { getTodayRangeISO } from "@/lib/dates";
 import {
   mergeTodosByMember,
   sortTodos,
@@ -40,10 +41,13 @@ export function useTodosCache({
 
   const fetchMemberTodos = useCallback(async (memberId: string) => {
     const supabase = createClient();
+    const { start, end } = getTodayRangeISO();
     const { data, error } = await supabase
       .from("todos")
       .select("*")
       .eq("created_by", memberId)
+      .gte("created_at", start)
+      .lt("created_at", end)
       .order("completed", { ascending: true })
       .order("created_at", { ascending: false });
 

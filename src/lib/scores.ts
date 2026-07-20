@@ -1,4 +1,6 @@
 import type { createClient } from "@/lib/supabase/client";
+import type { ScoreHistoryRange } from "./dates";
+import { getScoreRangeStartDate } from "./dates";
 import type { TodoPriority } from "./types";
 
 type SupabaseBrowserClient = ReturnType<typeof createClient>;
@@ -40,11 +42,14 @@ export type DailyScoreWithItems = DailyScore & {
 export async function fetchDailyScoresWithItems(
   supabase: SupabaseBrowserClient,
   userId: string,
+  rangeDays: ScoreHistoryRange = 7,
 ): Promise<{ data: DailyScoreWithItems[]; error: string | null }> {
+  const startDate = getScoreRangeStartDate(rangeDays);
   const { data: scores, error: scoresError } = await supabase
     .from("daily_scores")
     .select("*")
     .eq("user_id", userId)
+    .gte("score_date", startDate)
     .order("score_date", { ascending: false });
 
   if (scoresError) {

@@ -12,3 +12,11 @@ export type Todo = {
   created_at: string;
   updated_at: string;
 };
+
+export type TodoComment = {
+  id: string;
+  todo_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+};

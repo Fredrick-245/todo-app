@@ -6,18 +6,21 @@ import { Camera, ChevronDown, CircleX } from "lucide-react";
 import { deleteTodo, setTodoImagePath, toggleTodo } from "@/actions/todos";
 import { useRefreshTodos } from "@/components/todos-cache-context";
 import { PriorityBadge } from "@/components/priority-badge";
+import { TodoComments } from "@/components/todo-comments";
 import { getTodoCardBackground } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { buildTodoImagePath, getTodoImagePublicUrl } from "@/lib/storage";
+import type { AppMember } from "@/lib/allowed-users";
 import type { Todo } from "@/lib/types";
 
 type TodoItemProps = {
   todo: Todo;
   memberId: string;
   currentUserId: string;
+  members: AppMember[];
 };
 
-export function TodoItem({ todo, memberId, currentUserId }: TodoItemProps) {
+export function TodoItem({ todo, memberId, currentUserId, members }: TodoItemProps) {
   const refreshTodos = useRefreshTodos();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -123,6 +126,14 @@ export function TodoItem({ todo, memberId, currentUserId }: TodoItemProps) {
             className="max-h-72 w-full object-cover"
           />
         </div>
+      ) : null}
+      {expanded && hasImage ? (
+        <TodoComments
+          todoId={todo.id}
+          enabled={expanded}
+          members={members}
+          currentUserId={currentUserId}
+        />
       ) : null}
       {canManageTodo && hasImage && expanded ? (
         <Link

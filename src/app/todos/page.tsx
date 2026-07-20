@@ -4,6 +4,7 @@ import { TodosPageContent } from "@/components/todos-page-content";
 import type { AppMember } from "@/lib/allowed-users";
 import { resolveSelectedMemberId } from "@/lib/members";
 import { groupTodosByMember } from "@/lib/todos-cache";
+import { getTodayRangeISO } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import type { Todo } from "@/lib/types";
 
@@ -34,10 +35,13 @@ export default async function TodosPage({ searchParams }: TodosPageProps) {
   let initialTodosByMember = groupTodosByMember([], memberIds);
 
   if (memberIds.length > 0) {
+    const { start, end } = getTodayRangeISO();
     const { data, error } = await supabase
       .from("todos")
       .select("*")
       .in("created_by", memberIds)
+      .gte("created_at", start)
+      .lt("created_at", end)
       .order("completed", { ascending: true })
       .order("created_at", { ascending: false });
 
