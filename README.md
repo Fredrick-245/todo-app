@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Our Todo
 
-## Getting Started
+A shared todo app for you and a friend — Next.js 15, Tailwind CSS, Supabase Auth + PostgreSQL, deployable on Vercel.
 
-First, run the development server:
+## Features
+
+- Shared todo list (both of you see and edit the same items)
+- **Two-person only**: email allowlist + optional invite code
+- Members panel on the todos page (who has joined)
+- Labels, priority (Low / Medium / High), complete & delete
+- UI matched to the provided screenshots
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy env vars:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in your Supabase project URL and anon key. Set **`ALLOWED_EMAILS`** to your two emails (comma-separated). Optionally set `APP_INVITE_CODE` as a second gate at signup.
+
+## Two-person access
+
+This app is meant for exactly two people. Access is controlled in three layers:
+
+1. **`ALLOWED_EMAILS`** — only these emails can sign up or log in
+2. **`APP_INVITE_CODE`** — optional extra check at signup
+3. **Members list** — once logged in, the todos page shows who has joined (e.g. `Members (1/2)`)
+
+To see or manage all auth users (including deleting a stranger who somehow got in), use the Supabase dashboard: [Authentication → Users](https://supabase.com/dashboard/project/cgyffptaeisausevvukg/auth/users).
+
+After both of you have signed up, you can disable new signups in Supabase under **Auth → Providers → Email → Disable sign ups**.
+
+3. In the [Supabase Auth settings](https://supabase.com/dashboard/project/cgyffptaeisausevvukg/auth/providers):
+
+- Enable Email provider
+- For local testing, consider disabling **Confirm email** so you can log in immediately after signup
+- Add `http://localhost:3000/auth/callback` (and your Vercel URL) under Redirect URLs
+
+4. Run locally:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000).
 
 ## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push this repo to GitHub
+2. Import the project in Vercel
+3. Set environment variables:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `ALLOWED_EMAILS` (your two emails, comma-separated)
+- `APP_INVITE_CODE`
+- `NEXT_PUBLIC_SITE_URL` (your production URL, e.g. `https://your-app.vercel.app`)
+
+4. Add the production `/auth/callback` URL in Supabase Auth redirect allowlist
+5. Deploy
+
+## Invite your friend
+
+1. Add both emails to `ALLOWED_EMAILS` in `.env.local` (and Vercel when deployed)
+2. Share the app URL, invite code, and tell them to sign up at `/signup`
+3. Once both appear under **Members (2/2)**, disable signups in Supabase if you want

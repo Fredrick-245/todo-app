@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #111827;
+  --accent: #3b82f6;
 }
 
 @theme inline {
@@ -12,15 +13,45 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, sans-serif;
+}
+
+.priority-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to right,
+    #7dd3fc 0%,
+    #7dd3fc var(--priority-progress, 0%),
+    #e5e7eb var(--priority-progress, 0%),
+    #e5e7eb 100%
+  );
+  outline: none;
+}
+
+.priority-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #7dd3fc;
+  border: 3px solid #e0f2fe;
+  box-shadow: 0 0 0 1px #bae6fd;
+  cursor: pointer;
+}
+
+.priority-range::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  background: #7dd3fc;
+  border: 3px solid #e0f2fe;
+  box-shadow: 0 0 0 1px #bae6fd;
+  cursor: pointer;
 }
