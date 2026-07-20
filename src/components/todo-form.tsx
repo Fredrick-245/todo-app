@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { X } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 import { PrioritySlider } from "@/components/priority-slider";
 import { TODO_LABELS } from "@/lib/constants";
 import type { Todo, TodoPriority } from "@/lib/types";
@@ -33,11 +34,12 @@ export function TodoForm({
   const [label, setLabel] = useState(todo?.label ?? "");
 
   return (
-    <div className="min-h-dvh bg-slate-50">
-      <form
-        action={formAction}
-        className="mx-auto flex min-h-dvh w-full max-w-lg flex-col bg-white px-5 pb-6 pt-8"
-      >
+    <AppShell>
+      <div className="flex h-full w-full flex-col overflow-hidden bg-white">
+        <form
+          action={formAction}
+          className="flex h-full w-full flex-col overflow-hidden px-5 pb-6 pt-8"
+        >
       <div className="mb-8 flex items-start justify-between">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900">
           {title}
@@ -51,7 +53,7 @@ export function TodoForm({
         </Link>
       </div>
 
-      <div className="flex flex-1 flex-col gap-6">
+      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
         <label className="block">
           <span className="mb-2 block text-sm text-gray-500">To-do</span>
           <input
@@ -121,7 +123,8 @@ export function TodoForm({
       >
         {isPending ? "Saving..." : "Done"}
       </button>
-      </form>
-    </div>
+        </form>
+      </div>
+    </AppShell>
   );
 }

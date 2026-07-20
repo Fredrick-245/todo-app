@@ -8,6 +8,15 @@ export const PRIORITY_OPTIONS: { value: TodoPriority; label: string }[] = [
   { value: "high", label: "High" },
 ];
 
+export function getTodoCardBackground(
+  completed: boolean,
+  hasImage: boolean,
+): string {
+  if (completed) return "bg-[#d3f9d8]";
+  if (hasImage) return "bg-[#d0ebff]";
+  return "bg-white";
+}
+
 export const PRIORITY_STYLES: Record<
   TodoPriority,
   { label: string; className: string }

@@ -1,8 +1,9 @@
-import { TodosBottomBar } from "@/components/todos-bottom-bar";
-import { SignOutButton } from "@/components/sign-out-button";
-import { TodoItem } from "@/components/todo-item";
+import { AppShell } from "@/components/app-shell";
+import { TodosHeaderActions } from "@/components/todos-header-actions";
+import { TodosPageContent } from "@/components/todos-page-content";
 import type { AppMember } from "@/lib/allowed-users";
-import { getMemberLabel, resolveSelectedMemberId } from "@/lib/members";
+import { resolveSelectedMemberId } from "@/lib/members";
+import { groupTodosByMember } from "@/lib/todos-cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Todo } from "@/lib/types";
 
@@ -23,19 +24,20 @@ export default async function TodosPage({ searchParams }: TodosPageProps) {
     .order("created_at", { ascending: true });
 
   const members = (membersData ?? []) as AppMember[];
+  const memberIds = members.map((member) => member.id);
   const selectedMemberId = resolveSelectedMemberId(
     members,
     memberParam,
     user?.id,
   );
 
-  let todos: Todo[] = [];
+  let initialTodosByMember = groupTodosByMember([], memberIds);
 
-  if (selectedMemberId) {
+  if (memberIds.length > 0) {
     const { data, error } = await supabase
       .from("todos")
       .select("*")
-      .eq("created_by", selectedMemberId)
+      .in("created_by", memberIds)
       .order("completed", { ascending: true })
       .order("created_at", { ascending: false });
 
@@ -43,66 +45,28 @@ export default async function TodosPage({ searchParams }: TodosPageProps) {
       throw new Error(error.message);
     }
 
-    todos = (data ?? []) as Todo[];
+    initialTodosByMember = groupTodosByMember((data ?? []) as Todo[], memberIds);
   }
 
-  const active = todos.filter((todo) => !todo.completed);
-  const completed = todos.filter((todo) => todo.completed);
-  const selectedMember = members.find((member) => member.id === selectedMemberId);
-  const selectedLabel = selectedMember
-    ? getMemberLabel(selectedMember.email)
-    : "this member";
-
   return (
-    <main className="relative mx-auto min-h-dvh w-full max-w-lg bg-slate-50 px-5 pb-28 pt-8">
-      <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-          Todos
-        </h1>
-        <SignOutButton />
-      </header>
+    <AppShell>
+      {user && selectedMemberId ? (
+        <>
+          <header className="flex shrink-0 items-center justify-between px-5 pb-4 pt-8">
+            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+              Todos
+            </h1>
+            <TodosHeaderActions userId={user.id} />
+          </header>
 
-      {todos.length === 0 ? (
-        <div className="rounded-2xl bg-white px-5 py-10 text-center shadow-sm ring-1 ring-black/[0.03]">
-          <p className="font-medium text-gray-900">No todos yet</p>
-          <p className="mt-1 text-sm text-gray-400">
-            {selectedMember
-              ? `No todos for ${selectedLabel}. Tap + to add one.`
-              : "Add members first, then create todos."}
-          </p>
-        </div>
-      ) : user ? (
-        <div className="flex flex-col gap-3">
-          {active.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              memberId={selectedMemberId!}
-              currentUserId={user.id}
-            />
-          ))}
-
-          {active.length > 0 && completed.length > 0 ? (
-            <div className="my-2 border-t border-gray-200/80" />
-          ) : null}
-
-          {completed.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              memberId={selectedMemberId!}
-              currentUserId={user.id}
-            />
-          ))}
-        </div>
+          <TodosPageContent
+            members={members}
+            initialTodosByMember={initialTodosByMember}
+            selectedMemberId={selectedMemberId}
+            currentUserId={user.id}
+          />
+        </>
       ) : null}
-
-      {selectedMemberId ? (
-        <TodosBottomBar
-          members={members}
-          selectedMemberId={selectedMemberId}
-        />
-      ) : null}
-    </main>
+    </AppShell>
   );
 }

@@ -33,6 +33,40 @@ function todosPath(memberId: string) {
   return `/todos?member=${memberId}`;
 }
 
+async function assertTodoOwner(todoId: string): Promise<
+  | { error: string }
+  | { user: { id: string }; supabase: Awaited<ReturnType<typeof createClient>> }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be signed in." };
+  }
+
+  const { data: todo, error: fetchError } = await supabase
+    .from("todos")
+    .select("created_by")
+    .eq("id", todoId)
+    .maybeSingle();
+
+  if (fetchError) {
+    return { error: fetchError.message };
+  }
+
+  if (!todo) {
+    return { error: "Todo not found." };
+  }
+
+  if (todo.created_by !== user.id) {
+    return { error: "You can only change your own todos." };
+  }
+
+  return { user, supabase };
+}
+
 async function removeStoredTodoImage(
   supabase: Awaited<ReturnType<typeof createClient>>,
   path: string | null | undefined,
@@ -51,14 +85,12 @@ export async function setTodoImagePath(
     return { error: "Invalid image path." };
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in." };
+  const ownership = await assertTodoOwner(todoId);
+  if ("error" in ownership) {
+    return { error: ownership.error };
   }
+
+  const { supabase } = ownership;
 
   const { data: todo, error: fetchError } = await supabase
     .from("todos")
@@ -123,6 +155,10 @@ export async function createTodo(
     return { error: "You must be signed in." };
   }
 
+  if (validOwnerId !== user.id) {
+    return { error: "You can only add your own todos." };
+  }
+
   const { error } = await supabase.from("todos").insert({
     title,
     label,
@@ -160,7 +196,12 @@ export async function updateTodo(
     return { error: "Please choose a valid member." };
   }
 
-  const supabase = await createClient();
+  const ownership = await assertTodoOwner(id);
+  if ("error" in ownership) {
+    return { error: ownership.error };
+  }
+
+  const { supabase } = ownership;
   const { error } = await supabase
     .from("todos")
     .update({ title, label, priority })
@@ -208,7 +249,10 @@ export async function toggleTodo(
 
   const { error } = await supabase
     .from("todos")
-    .update({ completed })
+    .update({
+      completed,
+      completed_at: completed ? new Date().toISOString() : null,
+    })
     .eq("id", id);
 
   if (error) {
@@ -220,7 +264,12 @@ export async function toggleTodo(
 }
 
 export async function deleteTodo(id: string, memberId: string) {
-  const supabase = await createClient();
+  const ownership = await assertTodoOwner(id);
+  if ("error" in ownership) {
+    throw new Error(ownership.error);
+  }
+
+  const { supabase } = ownership;
 
   const { data: todo, error: fetchError } = await supabase
     .from("todos")

@@ -24,8 +24,8 @@ export default async function NewTodoPage({ searchParams }: NewTodoPageProps) {
   const members = (membersData ?? []) as AppMember[];
   const ownerId = resolveSelectedMemberId(members, memberParam, user?.id);
 
-  if (!ownerId) {
-    redirect("/todos");
+  if (!ownerId || ownerId !== user?.id) {
+    redirect(`/todos?member=${user?.id ?? ownerId ?? ""}`);
   }
 
   return (

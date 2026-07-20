@@ -50,8 +50,8 @@ export default async function EditTodoPage({
       user?.id,
     ) ?? todo.created_by;
 
-  if (!ownerId) {
-    redirect("/todos");
+  if (!ownerId || todo.created_by !== user?.id) {
+    redirect(`/todos?member=${todo.created_by ?? ownerId ?? ""}`);
   }
 
   const action = updateTodo.bind(null, todo.id);

@@ -15,7 +15,7 @@ export function AuthForm({ mode, action, requireInvite }: AuthFormProps) {
   const isSignup = mode === "signup";
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
+    <div className="flex h-full flex-1 flex-col justify-center overflow-hidden px-5 py-10">
       <h1 className="text-4xl font-bold tracking-tight text-gray-900">
         {isSignup ? "Sign up" : "Log in"}
       </h1>

@@ -6,8 +6,9 @@ A shared todo app for you and a friend — Next.js 15, Tailwind CSS, Supabase Au
 
 - Shared todo list (both of you see and edit the same items)
 - **Two-person only**: email allowlist + optional invite code
-- Members panel on the todos page (who has joined)
 - Labels, priority (Low / Medium / High), complete & delete
+- **Daily scoring**: low 3 pts, medium 5 pts, high 8 pts — scored nightly
+- Timer icon shows your daily score history with expandable completed tasks
 - UI matched to the provided screenshots
 
 ## Setup
@@ -51,6 +52,34 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+## Daily scores
+
+Apply the migration in `supabase/migrations/20260720170000_daily_scores.sql` via the Supabase SQL editor. It will:
+
+1. Track when todos are completed (`completed_at`)
+2. Store daily points per user (`daily_scores`, `daily_score_items`)
+3. Provide `process_daily_scores()` — scores yesterday’s completed todos, then resets them for the new day
+
+Point values: **Low 3**, **Medium 5**, **High 8**.
+
+Schedule the nightly cron in Supabase (requires `pg_cron`):
+
+```sql
+select cron.schedule(
+  'daily-todo-scores',
+  '0 0 * * *',
+  $$select public.process_daily_scores();$$
+);
+```
+
+Test manually:
+
+```sql
+select public.process_daily_scores();
+```
+
+Tap the **timer icon** next to logout to view past days, scores, and completed tasks.
 
 ## Deploy on Vercel
 
