@@ -35,8 +35,10 @@ export function HistoryPointsChart({
   const paddingTop = 18;
   const paddingBottom = 28;
   const plotHeight = chartHeight - paddingTop - paddingBottom;
-  const slotWidth = (chartWidth - paddingX * 2) / data.length;
+  const dayCount = Math.max(data.length, 1);
+  const slotWidth = (chartWidth - paddingX * 2) / dayCount;
   const barWidth = Math.max(6, Math.min(28, slotWidth * 0.55));
+  const labelStep = Math.max(1, Math.ceil(dayCount / 6));
 
   return (
     <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4 ring-1 ring-sky-100 [scrollbar-width:none]">
@@ -96,7 +98,7 @@ export function HistoryPointsChart({
             !compact ||
             index === 0 ||
             index === data.length - 1 ||
-            index % Math.ceil(data.length / 6) === 0;
+            index % labelStep === 0;
 
           return (
             <g key={day.date}>

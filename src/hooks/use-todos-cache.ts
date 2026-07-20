@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppMember } from "@/lib/allowed-users";
 import { createClient } from "@/lib/supabase/client";
 import { getTodayRangeISO } from "@/lib/dates";
@@ -23,7 +23,11 @@ export function useTodosCache({
   initialTodosByMember,
   selectedMemberId,
 }: UseTodosCacheOptions) {
-  const memberIds = members.map((member) => member.id);
+  const memberIds = useMemo(
+    () => members.map((member) => member.id),
+    [members],
+  );
+  const memberIdsKey = memberIds.join(",");
   const [activeMemberId, setActiveMemberId] = useState(selectedMemberId);
   const [todosByMember, setTodosByMember] =
     useState<TodosByMember>(initialTodosByMember);
@@ -123,9 +127,26 @@ export function useTodosCache({
           const todo = payload.new as Todo;
           if (!todo.created_by) return;
 
+          const { start, end } = getTodayRangeISO();
+          const createdAt = new Date(todo.created_at).getTime();
+          const inTodayRange =
+            createdAt >= new Date(start).getTime() &&
+            createdAt < new Date(end).getTime();
+
           setTodosByMember((current) => {
             const existing = current[todo.created_by!] ?? [];
             const index = existing.findIndex((item) => item.id === todo.id);
+
+            if (!inTodayRange) {
+              if (index < 0) return current;
+              return {
+                ...current,
+                [todo.created_by!]: sortTodos(
+                  existing.filter((item) => item.id !== todo.id),
+                ),
+              };
+            }
+
             const next =
               index >= 0
                 ? existing.map((item, itemIndex) =>
@@ -145,7 +166,7 @@ export function useTodosCache({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [fetchMemberTodos, memberIds]);
+  }, [fetchMemberTodos, memberIds, memberIdsKey]);
 
   const activeTodos = todosByMember[activeMemberId] ?? [];
   const showSkeleton =

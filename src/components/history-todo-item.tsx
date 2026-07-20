@@ -11,13 +11,15 @@ import type { Todo } from "@/lib/types";
 
 type HistoryTodoItemProps = {
   todo: Todo;
-  userId: string;
+  memberId: string;
+  currentUserId: string;
   onDeleted: (todoId: string) => void;
 };
 
 export function HistoryTodoItem({
   todo,
-  userId,
+  memberId,
+  currentUserId,
   onDeleted,
 }: HistoryTodoItemProps) {
   const [isPending, startTransition] = useTransition();
@@ -26,6 +28,7 @@ export function HistoryTodoItem({
   const imageUrl = getTodoImagePublicUrl(todo.image_path);
   const hasImage = Boolean(imageUrl);
   const points = getTodoPoints(todo);
+  const canDelete = todo.created_by === currentUserId;
 
   const content = (
     <>
@@ -80,27 +83,31 @@ export function HistoryTodoItem({
       }`}
     >
       <div className="flex items-start gap-3">
-        <button
-          type="button"
-          aria-label={`Delete ${todo.title}`}
-          disabled={isPending}
-          className="mt-0.5 shrink-0 text-gray-300 transition-colors hover:text-gray-500 disabled:opacity-50"
-          onClick={() => {
-            setError(null);
-            startTransition(async () => {
-              try {
-                await deleteTodo(todo.id, userId);
-                onDeleted(todo.id);
-              } catch (err) {
-                setError(
-                  err instanceof Error ? err.message : "Could not delete todo.",
-                );
-              }
-            });
-          }}
-        >
-          <CircleX className="h-5 w-5" strokeWidth={1.75} />
-        </button>
+        {canDelete ? (
+          <button
+            type="button"
+            aria-label={`Delete ${todo.title}`}
+            disabled={isPending}
+            className="mt-0.5 shrink-0 text-gray-300 transition-colors hover:text-gray-500 disabled:opacity-50"
+            onClick={() => {
+              setError(null);
+              startTransition(async () => {
+                try {
+                  await deleteTodo(todo.id, memberId);
+                  onDeleted(todo.id);
+                } catch (err) {
+                  setError(
+                    err instanceof Error
+                      ? err.message
+                      : "Could not delete todo.",
+                  );
+                }
+              });
+            }}
+          >
+            <CircleX className="h-5 w-5" strokeWidth={1.75} />
+          </button>
+        ) : null}
 
         {hasImage ? (
           <button

@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/app-shell";
-import { TodosHeaderActions } from "@/components/todos-header-actions";
 import { TodosPageContent } from "@/components/todos-page-content";
 import type { AppMember } from "@/lib/allowed-users";
 import { resolveSelectedMemberId } from "@/lib/members";
@@ -55,21 +54,12 @@ export default async function TodosPage({ searchParams }: TodosPageProps) {
   return (
     <AppShell>
       {user && selectedMemberId ? (
-        <>
-          <header className="flex shrink-0 items-center justify-between px-5 pb-4 pt-8">
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-              Todos
-            </h1>
-            <TodosHeaderActions userId={user.id} />
-          </header>
-
-          <TodosPageContent
-            members={members}
-            initialTodosByMember={initialTodosByMember}
-            selectedMemberId={selectedMemberId}
-            currentUserId={user.id}
-          />
-        </>
+        <TodosPageContent
+          members={members}
+          initialTodosByMember={initialTodosByMember}
+          selectedMemberId={selectedMemberId}
+          currentUserId={user.id}
+        />
       ) : null}
     </AppShell>
   );
