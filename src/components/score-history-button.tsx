@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Timer, X } from "lucide-react";
 import { PriorityBadge } from "@/components/priority-badge";
 import { createClient } from "@/lib/supabase/client";
-import type { DailyScoreWithItems } from "@/lib/scores";
+import { fetchDailyScoresWithItems, type DailyScoreWithItems } from "@/lib/scores";
 
 type ScoreHistoryButtonProps = {
   userId: string;
@@ -36,19 +36,18 @@ export function ScoreHistoryButton({ userId }: ScoreHistoryButtonProps) {
       setError(null);
 
       const supabase = createClient();
-      const { data, error: fetchError } = await supabase
-        .from("daily_scores")
-        .select("*, daily_score_items(*)")
-        .eq("user_id", userId)
-        .order("score_date", { ascending: false });
+      const { data, error: fetchError } = await fetchDailyScoresWithItems(
+        supabase,
+        userId,
+      );
 
       if (cancelled) return;
 
       if (fetchError) {
-        setError(fetchError.message);
+        setError(fetchError);
         setScores([]);
       } else {
-        setScores((data ?? []) as DailyScoreWithItems[]);
+        setScores(data);
       }
 
       setLoading(false);

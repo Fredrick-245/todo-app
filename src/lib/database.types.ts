@@ -58,7 +58,15 @@ export type Database = {
           title?: string;
           todo_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "daily_score_items_daily_score_id_fkey",
+            columns: ["daily_score_id"],
+            isOneToOne: false,
+            referencedRelation: "daily_scores",
+            referencedColumns: ["id"],
+          },
+        ];
       };
       daily_scores: {
         Row: {
