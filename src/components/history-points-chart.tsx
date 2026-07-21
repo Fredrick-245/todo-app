@@ -41,20 +41,22 @@ export function HistoryPointsChart({
   const labelStep = Math.max(1, Math.ceil(dayCount / 6));
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-sky-50 via-white to-blue-50 p-4 ring-1 ring-sky-100 [scrollbar-width:none]">
-      <div className="mb-3 flex items-end justify-between gap-3">
+    <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-sky-50 via-white to-blue-50 p-3 ring-1 ring-sky-100 sm:p-4">
+      <div className="mb-2 flex items-end justify-between gap-2 sm:mb-3 sm:gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-sky-600">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-sky-600 sm:text-xs">
             Points · {rangeLabel}
           </p>
-          <p className="mt-1 text-3xl font-bold tracking-tight text-gray-900">
+          <p className="mt-0.5 text-2xl font-bold tracking-tight text-gray-900 sm:mt-1 sm:text-3xl">
             {totalPoints}
           </p>
-          <p className="text-xs text-gray-400">Low 3 · Medium 5 · High 8</p>
+          <p className="text-[10px] text-gray-400 sm:text-xs">
+            Low 3 · Medium 5 · High 8
+          </p>
         </div>
-        <div className="rounded-xl bg-white/80 px-3 py-2 text-right shadow-sm ring-1 ring-black/[0.04]">
-          <p className="text-[11px] text-gray-400">Avg / day</p>
-          <p className="text-sm font-semibold text-blue-500">
+        <div className="rounded-xl bg-white/80 px-2.5 py-1.5 text-right shadow-sm ring-1 ring-black/[0.04] sm:px-3 sm:py-2">
+          <p className="text-[10px] text-gray-400 sm:text-[11px]">Avg / day</p>
+          <p className="text-xs font-semibold text-blue-500 sm:text-sm">
             {data.length > 0 ? Math.round(totalPoints / data.length) : 0}
           </p>
         </div>
@@ -62,7 +64,7 @@ export function HistoryPointsChart({
 
       <svg
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="h-40 w-full"
+        className="h-28 w-full sm:h-40"
         role="img"
         aria-label={`Points chart for ${rangeLabel}`}
       >

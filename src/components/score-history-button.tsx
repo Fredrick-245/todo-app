@@ -105,15 +105,15 @@ export function ScoreHistoryButton({
   const modal =
     open && mounted
       ? createPortal(
-          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/20 p-4 sm:items-center">
-            <div className="flex max-h-[85dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/[0.05]">
-              <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+          <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/25 p-2 sm:items-center sm:p-4">
+            <div className="flex h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/[0.05] sm:h-auto sm:max-h-[85dvh]">
+              <div className="flex shrink-0 items-center justify-between border-b border-gray-100 px-3 py-3 sm:px-5 sm:py-4">
+                <div className="min-w-0 pr-2">
+                  <h2 className="text-base font-semibold text-gray-900 sm:text-lg">
                     Previous todos
                   </h2>
-                  <p className="text-sm text-gray-400">
-                    Points by priority · Low 3 · Medium 5 · High 8
+                  <p className="text-[11px] text-gray-400 sm:text-sm">
+                    Points · Low 3 · Medium 5 · High 8
                   </p>
                 </div>
                 <button
@@ -126,77 +126,82 @@ export function ScoreHistoryButton({
                 </button>
               </div>
 
-              <div className="shrink-0 space-y-3 border-b border-gray-100 px-5 py-3">
-                <div className="flex rounded-xl bg-slate-100 p-1">
-                  {RANGE_OPTIONS.map((option) => {
-                    const active = range === option.value;
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3 sm:px-5 sm:py-4">
+                <div className="flex flex-col gap-3 sm:gap-4">
+                  <div className="flex rounded-xl bg-slate-100 p-1">
+                    {RANGE_OPTIONS.map((option) => {
+                      const active = range === option.value;
 
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setRange(option.value)}
-                        className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
-                          active
-                            ? "bg-white text-gray-900 shadow-sm"
-                            : "text-gray-500 hover:text-gray-700"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {!loading && !error ? (
-                  <HistoryPointsChart
-                    data={chartData}
-                    totalPoints={totalPoints}
-                    rangeLabel={rangeLabel}
-                  />
-                ) : null}
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                {loading ? (
-                  <p className="text-sm text-gray-400">Loading todos...</p>
-                ) : error ? (
-                  <p className="text-sm text-red-500">{error}</p>
-                ) : days.length === 0 ? (
-                  <p className="text-sm text-gray-400">
-                    {range === 1
-                      ? "No todos from yesterday."
-                      : `No todos in the last ${range} days.`}
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-5">
-                    {days.map((day) => (
-                      <section key={day.date} className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <h3 className="text-sm font-semibold text-gray-500">
-                            {formatHistoryDate(day.date)}
-                            <span className="ml-2 font-normal text-gray-400">
-                              {day.todos.length} todo
-                              {day.todos.length === 1 ? "" : "s"}
-                            </span>
-                          </h3>
-                          <p className="text-sm font-semibold text-blue-500">
-                            {day.points} pts
-                          </p>
-                        </div>
-                        {day.todos.map((todo) => (
-                          <HistoryTodoItem
-                            key={todo.id}
-                            todo={todo}
-                            memberId={memberId}
-                            currentUserId={currentUserId}
-                            onDeleted={handleDeleted}
-                          />
-                        ))}
-                      </section>
-                    ))}
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setRange(option.value)}
+                          className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition sm:px-3 sm:text-sm ${
+                            active
+                              ? "bg-white text-gray-900 shadow-sm"
+                              : "text-gray-500 hover:text-gray-700"
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                )}
+
+                  {loading ? (
+                    <p className="text-xs text-gray-400 sm:text-sm">
+                      Loading todos...
+                    </p>
+                  ) : error ? (
+                    <p className="text-xs text-red-500 sm:text-sm">{error}</p>
+                  ) : (
+                    <>
+                      <HistoryPointsChart
+                        data={chartData}
+                        totalPoints={totalPoints}
+                        rangeLabel={rangeLabel}
+                      />
+
+                      {days.length === 0 ? (
+                        <p className="text-xs text-gray-400 sm:text-sm">
+                          {range === 1
+                            ? "No todos from yesterday."
+                            : `No todos in the last ${range} days.`}
+                        </p>
+                      ) : (
+                        days.map((day) => (
+                          <section
+                            key={day.date}
+                            className="flex flex-col gap-2.5 sm:gap-3"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <h3 className="text-xs font-semibold text-gray-500 sm:text-sm">
+                                {formatHistoryDate(day.date)}
+                                <span className="ml-1.5 font-normal text-gray-400 sm:ml-2">
+                                  {day.todos.length} todo
+                                  {day.todos.length === 1 ? "" : "s"}
+                                </span>
+                              </h3>
+                              <p className="text-xs font-semibold text-blue-500 sm:text-sm">
+                                {day.points} pts
+                              </p>
+                            </div>
+                            {day.todos.map((todo) => (
+                              <HistoryTodoItem
+                                key={todo.id}
+                                todo={todo}
+                                memberId={memberId}
+                                currentUserId={currentUserId}
+                                onDeleted={handleDeleted}
+                              />
+                            ))}
+                          </section>
+                        ))
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>,
@@ -213,9 +218,9 @@ export function ScoreHistoryButton({
           setLoading(true);
           setOpen(true);
         }}
-        className="relative z-10 rounded-full p-2 text-gray-400 transition-colors hover:bg-white hover:text-gray-600"
+        className="relative z-10 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-gray-600 sm:p-2"
       >
-        <Timer className="h-5 w-5" strokeWidth={1.75} />
+        <Timer className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.75} />
       </button>
       {modal}
     </>

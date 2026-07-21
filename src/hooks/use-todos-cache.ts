@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AppMember } from "@/lib/allowed-users";
 import { createClient } from "@/lib/supabase/client";
-import { getTodayRangeISO } from "@/lib/dates";
+import { getTodayRangeISO, isCreatedToday } from "@/lib/dates";
 import {
+  filterTodaysTodos,
   mergeTodosByMember,
   sortTodos,
   todosEqual,
@@ -29,8 +30,13 @@ export function useTodosCache({
   );
   const memberIdsKey = memberIds.join(",");
   const [activeMemberId, setActiveMemberId] = useState(selectedMemberId);
-  const [todosByMember, setTodosByMember] =
-    useState<TodosByMember>(initialTodosByMember);
+  const [todosByMember, setTodosByMember] = useState<TodosByMember>(() => {
+    const filtered: TodosByMember = {};
+    for (const memberId of Object.keys(initialTodosByMember)) {
+      filtered[memberId] = filterTodaysTodos(initialTodosByMember[memberId] ?? []);
+    }
+    return filtered;
+  });
   const [loadingMemberId, setLoadingMemberId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,9 +44,14 @@ export function useTodosCache({
   }, [selectedMemberId]);
 
   useEffect(() => {
-    setTodosByMember((current) =>
-      mergeTodosByMember(current, initialTodosByMember),
-    );
+    const todayOnly: TodosByMember = {};
+    for (const memberId of Object.keys(initialTodosByMember)) {
+      todayOnly[memberId] = filterTodaysTodos(
+        initialTodosByMember[memberId] ?? [],
+      );
+    }
+
+    setTodosByMember((current) => mergeTodosByMember(current, todayOnly));
   }, [initialTodosByMember]);
 
   const fetchMemberTodos = useCallback(async (memberId: string) => {
@@ -59,10 +70,10 @@ export function useTodosCache({
       return;
     }
 
-    const sorted = sortTodos(data as Todo[]);
+    const sorted = filterTodaysTodos(data as Todo[]);
 
     setTodosByMember((current) => {
-      const existing = current[memberId] ?? [];
+      const existing = filterTodaysTodos(current[memberId] ?? []);
 
       if (todosEqual(existing, sorted)) {
         return current;
@@ -97,6 +108,12 @@ export function useTodosCache({
     [activeMemberId, refreshMemberIfChanged],
   );
 
+  // Always hydrate today's todos for every member into the cache.
+  useEffect(() => {
+    if (memberIds.length === 0) return;
+    void Promise.all(memberIds.map((id) => fetchMemberTodos(id)));
+  }, [fetchMemberTodos, memberIdsKey, memberIds]);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -117,7 +134,7 @@ export function useTodosCache({
 
             setTodosByMember((current) => ({
               ...current,
-              [memberId]: sortTodos(
+              [memberId]: filterTodaysTodos(
                 (current[memberId] ?? []).filter((todo) => todo.id !== deleted.id),
               ),
             }));
@@ -127,23 +144,15 @@ export function useTodosCache({
           const todo = payload.new as Todo;
           if (!todo.created_by) return;
 
-          const { start, end } = getTodayRangeISO();
-          const createdAt = new Date(todo.created_at).getTime();
-          const inTodayRange =
-            createdAt >= new Date(start).getTime() &&
-            createdAt < new Date(end).getTime();
-
           setTodosByMember((current) => {
-            const existing = current[todo.created_by!] ?? [];
+            const existing = filterTodaysTodos(current[todo.created_by!] ?? []);
             const index = existing.findIndex((item) => item.id === todo.id);
 
-            if (!inTodayRange) {
+            if (!isCreatedToday(todo.created_at)) {
               if (index < 0) return current;
               return {
                 ...current,
-                [todo.created_by!]: sortTodos(
-                  existing.filter((item) => item.id !== todo.id),
-                ),
+                [todo.created_by!]: existing.filter((item) => item.id !== todo.id),
               };
             }
 
@@ -168,7 +177,7 @@ export function useTodosCache({
     };
   }, [fetchMemberTodos, memberIds, memberIdsKey]);
 
-  const activeTodos = todosByMember[activeMemberId] ?? [];
+  const activeTodos = filterTodaysTodos(todosByMember[activeMemberId] ?? []);
   const showSkeleton =
     loadingMemberId === activeMemberId && activeTodos.length === 0;
 

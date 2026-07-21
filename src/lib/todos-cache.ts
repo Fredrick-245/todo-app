@@ -1,3 +1,4 @@
+import { isCreatedToday } from "@/lib/dates";
 import type { Todo } from "@/lib/types";
 
 export type TodosByMember = Record<string, Todo[]>;
@@ -14,6 +15,10 @@ export function sortTodos(todos: Todo[]): Todo[] {
   });
 }
 
+export function filterTodaysTodos(todos: Todo[]): Todo[] {
+  return sortTodos(todos.filter((todo) => isCreatedToday(todo.created_at)));
+}
+
 export function groupTodosByMember(
   todos: Todo[],
   memberIds: string[],
@@ -23,7 +28,11 @@ export function groupTodosByMember(
   ) as TodosByMember;
 
   for (const todo of todos) {
-    if (todo.created_by && grouped[todo.created_by]) {
+    if (
+      todo.created_by &&
+      grouped[todo.created_by] &&
+      isCreatedToday(todo.created_at)
+    ) {
       grouped[todo.created_by].push(todo);
     }
   }

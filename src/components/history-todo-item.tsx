@@ -30,17 +30,17 @@ export function HistoryTodoItem({
   const points = getTodoPoints(todo);
   const canDelete = todo.created_by === currentUserId;
 
-  const content = (
+  const summary = (
     <>
       <div className="flex items-start gap-2">
         <h2
-          className={`min-w-0 flex-1 truncate text-[15px] font-semibold leading-snug ${
+          className={`min-w-0 flex-1 truncate text-[13px] font-semibold leading-snug sm:text-[15px] ${
             todo.completed ? "text-gray-400" : "text-gray-900"
           }`}
         >
           {todo.title}
         </h2>
-        <span className="shrink-0 text-sm font-semibold text-blue-500">
+        <span className="shrink-0 text-xs font-semibold text-blue-500 sm:text-sm">
           +{points}
         </span>
         {hasImage ? (
@@ -53,7 +53,7 @@ export function HistoryTodoItem({
         ) : null}
       </div>
       <p
-        className={`mt-0.5 text-sm ${
+        className={`mt-0.5 text-xs sm:text-sm ${
           todo.completed ? "text-gray-300" : "text-gray-400"
         }`}
       >
@@ -62,23 +62,12 @@ export function HistoryTodoItem({
       <div className="mt-2">
         <PriorityBadge priority={todo.priority} />
       </div>
-      {expanded && imageUrl ? (
-        <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-black/[0.04]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt={`Attachment for ${todo.title}`}
-            className="max-h-48 w-full object-cover"
-          />
-        </div>
-      ) : null}
-      {error ? <p className="mt-2 text-xs text-red-500">{error}</p> : null}
     </>
   );
 
   return (
     <article
-      className={`rounded-2xl p-4 shadow-sm ring-1 ring-black/[0.03] transition-opacity ${getTodoCardBackground(todo.completed, hasImage)} ${
+      className={`rounded-2xl p-3 shadow-sm ring-1 ring-black/[0.03] transition-opacity sm:p-4 ${getTodoCardBackground(todo.completed, hasImage)} ${
         isPending ? "opacity-60" : "opacity-100"
       }`}
     >
@@ -110,18 +99,41 @@ export function HistoryTodoItem({
         ) : null}
 
         {hasImage ? (
-          <button
-            type="button"
-            className="min-w-0 flex-1 text-left"
-            onClick={() => setExpanded((value) => !value)}
+          <div
+            role="button"
+            tabIndex={0}
+            className="min-w-0 flex-1 cursor-pointer text-left"
             aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+            onMouseDown={(event) => event.preventDefault()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                setExpanded((value) => !value);
+              }
+              if (event.key === " " || event.key === "Spacebar") {
+                event.preventDefault();
+              }
+            }}
           >
-            {content}
-          </button>
+            {summary}
+          </div>
         ) : (
-          <div className="min-w-0 flex-1">{content}</div>
+          <div className="min-w-0 flex-1">{summary}</div>
         )}
       </div>
+
+      {expanded && imageUrl ? (
+        <div className="mt-3 overflow-hidden rounded-xl ring-1 ring-black/[0.04]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageUrl}
+            alt={`Attachment for ${todo.title}`}
+            className="max-h-48 w-full object-cover"
+          />
+        </div>
+      ) : null}
+      {error ? <p className="mt-2 text-xs text-red-500">{error}</p> : null}
     </article>
   );
 }

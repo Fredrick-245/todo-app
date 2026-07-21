@@ -37,7 +37,7 @@ export function TodosBottomBar({
                 role="tab"
                 aria-selected={isSelected}
                 onClick={() => onMemberChange(member.id)}
-                className={`min-w-0 flex-1 truncate rounded-xl px-3 py-3 text-sm font-semibold transition ${
+                className={`min-w-0 flex-1 truncate rounded-xl px-2 py-2.5 text-xs font-semibold transition sm:px-3 sm:py-3 sm:text-sm ${
                   isSelected
                     ? "bg-blue-500 text-white shadow-sm"
                     : "text-gray-500 hover:text-gray-700"
@@ -53,9 +53,9 @@ export function TodosBottomBar({
       <Link
         href={`/todos/new?member=${currentUserId}`}
         aria-label="Add todo"
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-600"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-600 sm:h-14 sm:w-14"
       >
-        <Plus className="h-7 w-7" strokeWidth={2.25} />
+        <Plus className="h-5 w-5 sm:h-7 sm:w-7" strokeWidth={2.25} />
       </Link>
     </div>
   );

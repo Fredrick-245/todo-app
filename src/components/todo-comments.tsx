@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Send } from "lucide-react";
 import { createComment } from "@/actions/comments";
 import { useTodoComments } from "@/hooks/use-todo-comments";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
@@ -65,12 +66,9 @@ export function TodoComments({
     }
   };
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-
+  const submitComment = () => {
     const trimmed = body.trim();
-    if (!trimmed) return;
+    if (!trimmed || isPending) return;
 
     setError(null);
     startTransition(async () => {
@@ -89,46 +87,70 @@ export function TodoComments({
     <div
       className="mt-3 border-t border-black/[0.06] pt-3"
       onClick={(event) => event.stopPropagation()}
+      onMouseDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => event.stopPropagation()}
     >
       {loading ? (
-        <p className="text-xs text-gray-400">Loading comments...</p>
+        <p className="text-[11px] text-gray-400 sm:text-xs">Loading comments...</p>
       ) : comments.length === 0 ? (
-        <p className="text-xs text-gray-400">No comments yet.</p>
+        <p className="text-[11px] text-gray-400 sm:text-xs">No comments yet.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {comments.map((comment) => (
-            <li key={comment.id} className="rounded-xl bg-white/70 px-3 py-2">
+            <li key={comment.id} className="rounded-xl bg-white/70 px-2.5 py-1.5 sm:px-3 sm:py-2">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-xs font-semibold text-gray-700">
+                <span className="text-[11px] font-semibold text-gray-700 sm:text-xs">
                   {getAuthorLabel(comment.author_id)}
                 </span>
-                <span className="shrink-0 text-[11px] text-gray-400">
+                <span className="shrink-0 text-[10px] text-gray-400 sm:text-[11px]">
                   {formatCommentTime(comment.created_at)}
                 </span>
               </div>
-              <p className="mt-0.5 text-sm text-gray-600">{comment.body}</p>
+              <p className="mt-0.5 text-xs text-gray-600 sm:text-sm">{comment.body}</p>
             </li>
           ))}
         </ul>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-3">
-        <input
-          type="text"
+      <div className="mt-3 flex items-end gap-2">
+        <textarea
           value={body}
           placeholder="Add a comment..."
           maxLength={1000}
+          rows={1}
           disabled={isPending}
-          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none disabled:opacity-50"
+          enterKeyHint="enter"
+          autoComplete="off"
+          autoCorrect="on"
+          className="min-h-9 max-h-24 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none disabled:opacity-50 sm:text-sm"
           onChange={(event) => handleChange(event.target.value)}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+            // Enter should never publish — only the send button does.
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+            }
+          }}
+          onKeyUp={(event) => event.stopPropagation()}
         />
-        {typingName ? (
-          <p className="mt-1.5 text-xs text-gray-400">
-            {typingName} is typing...
-          </p>
-        ) : null}
-        {error ? <p className="mt-1.5 text-xs text-red-500">{error}</p> : null}
-      </form>
+        <button
+          type="button"
+          aria-label="Send comment"
+          disabled={isPending || !body.trim()}
+          onClick={submitComment}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500 text-white transition hover:bg-blue-600 disabled:opacity-40"
+        >
+          <Send className="h-3.5 w-3.5" strokeWidth={2} />
+        </button>
+      </div>
+      {typingName ? (
+        <p className="mt-1.5 text-[11px] text-gray-400 sm:text-xs">
+          {typingName} is typing...
+        </p>
+      ) : null}
+      {error ? (
+        <p className="mt-1.5 text-[11px] text-red-500 sm:text-xs">{error}</p>
+      ) : null}
     </div>
   );
 }
