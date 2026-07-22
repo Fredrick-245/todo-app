@@ -20,3 +20,9 @@ export type TodoComment = {
   body: string;
   created_at: string;
 };
+
+export type TodoCommentRead = {
+  user_id: string;
+  todo_id: string;
+  last_read_at: string;
+};

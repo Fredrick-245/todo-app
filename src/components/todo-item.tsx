@@ -19,6 +19,7 @@ type TodoItemProps = {
   currentUserId: string;
   members: AppMember[];
   expanded: boolean;
+  hasUnreadComments: boolean;
   onExpandedChange: (value: boolean | ((prev: boolean) => boolean)) => void;
 };
 
@@ -28,6 +29,7 @@ export function TodoItem({
   currentUserId,
   members,
   expanded,
+  hasUnreadComments,
   onExpandedChange,
 }: TodoItemProps) {
   const refreshTodos = useRefreshTodos();
@@ -159,10 +161,16 @@ export function TodoItem({
 
   return (
     <article
-      className={`rounded-2xl p-3 shadow-sm ring-1 ring-black/[0.03] transition-opacity sm:p-4 ${getTodoCardBackground(todo.completed, hasImage)} ${
+      className={`relative rounded-2xl p-3 shadow-sm ring-1 ring-black/[0.03] transition-opacity sm:p-4 ${getTodoCardBackground(todo.completed, hasImage)} ${
         isPending ? "opacity-60" : "opacity-100"
       }`}
     >
+      {hasUnreadComments && !expanded && hasImage ? (
+        <span
+          className="absolute right-3 top-3 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white sm:right-4 sm:top-4"
+          aria-label="Unread comments"
+        />
+      ) : null}
       <div className="flex items-start gap-3">
         {canManageTodo ? (
           <button

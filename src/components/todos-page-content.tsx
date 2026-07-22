@@ -7,6 +7,7 @@ import { TodosBottomBar } from "@/components/todos-bottom-bar";
 import { TodosCacheProvider } from "@/components/todos-cache-context";
 import { TodosHeaderActions } from "@/components/todos-header-actions";
 import { useTodosCache } from "@/hooks/use-todos-cache";
+import { useUnreadComments } from "@/hooks/use-unread-comments";
 import type { AppMember } from "@/lib/allowed-users";
 import { getMemberLabel } from "@/lib/members";
 import type { TodosByMember } from "@/lib/todos-cache";
@@ -42,12 +43,22 @@ export function TodosPageContent({
     () => new Set(),
   );
 
-  const setTodoExpanded = useCallback(
+  const { unreadTodoIds, markCommentsRead } = useUnreadComments(
+    activeTodos,
+    expandedTodoIds,
+    currentUserId,
+  );
+
+  const handleExpandedChange = useCallback(
     (todoId: string, value: boolean | ((prev: boolean) => boolean)) => {
       setExpandedTodoIds((current) => {
         const wasExpanded = current.has(todoId);
         const next = typeof value === "function" ? value(wasExpanded) : value;
         if (next === wasExpanded) return current;
+
+        if (next) {
+          void markCommentsRead(todoId);
+        }
 
         const updated = new Set(current);
         if (next) {
@@ -58,7 +69,7 @@ export function TodosPageContent({
         return updated;
       });
     },
-    [],
+    [markCommentsRead],
   );
 
   return (
@@ -100,7 +111,8 @@ export function TodosPageContent({
                   currentUserId={currentUserId}
                   members={members}
                   expanded={expandedTodoIds.has(todo.id)}
-                  onExpandedChange={(value) => setTodoExpanded(todo.id, value)}
+                  hasUnreadComments={unreadTodoIds.has(todo.id)}
+                  onExpandedChange={(value) => handleExpandedChange(todo.id, value)}
                 />
               ))}
 
@@ -119,7 +131,8 @@ export function TodosPageContent({
                   currentUserId={currentUserId}
                   members={members}
                   expanded={expandedTodoIds.has(todo.id)}
-                  onExpandedChange={(value) => setTodoExpanded(todo.id, value)}
+                  hasUnreadComments={unreadTodoIds.has(todo.id)}
+                  onExpandedChange={(value) => handleExpandedChange(todo.id, value)}
                 />
               ))}
           </div>

@@ -122,7 +122,7 @@ export function TodoComments({
           enterKeyHint="enter"
           autoComplete="off"
           autoCorrect="on"
-          className="min-h-9 max-h-24 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none disabled:opacity-50 sm:text-sm"
+          className="min-h-9 max-h-24 w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none disabled:opacity-50 sm:text-sm"
           onChange={(event) => handleChange(event.target.value)}
           onKeyDown={(event) => {
             event.stopPropagation();

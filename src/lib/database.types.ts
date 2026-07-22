@@ -166,6 +166,32 @@ export type Database = {
           },
         ];
       };
+      todo_comment_reads: {
+        Row: {
+          last_read_at: string;
+          todo_id: string;
+          user_id: string;
+        };
+        Insert: {
+          last_read_at?: string;
+          todo_id: string;
+          user_id: string;
+        };
+        Update: {
+          last_read_at?: string;
+          todo_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "todo_comment_reads_todo_id_fkey";
+            columns: ["todo_id"];
+            isOneToOne: false;
+            referencedRelation: "todos";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;

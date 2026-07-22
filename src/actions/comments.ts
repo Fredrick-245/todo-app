@@ -55,3 +55,29 @@ export async function createComment(
 
   return {};
 }
+
+export async function markCommentsRead(todoId: string): Promise<CommentFormState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be signed in." };
+  }
+
+  const { error } = await supabase.from("todo_comment_reads").upsert(
+    {
+      user_id: user.id,
+      todo_id: todoId,
+      last_read_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id,todo_id" },
+  );
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {};
+}
