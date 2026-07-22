@@ -106,6 +106,7 @@ export function TodosPageContent({
           <MemberPresenceLabel isOnline={isOnline} statusLabel={statusLabel} />
         </div>
         <TodosHeaderActions
+          members={members}
           memberId={activeMemberId}
           currentUserId={currentUserId}
         />

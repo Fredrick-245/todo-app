@@ -31,3 +31,10 @@ export type MemberActivity = {
   user_id: string;
   last_seen_at: string;
 };
+
+export type ChatMessage = {
+  id: string;
+  sender_id: string;
+  body: string;
+  created_at: string;
+};
