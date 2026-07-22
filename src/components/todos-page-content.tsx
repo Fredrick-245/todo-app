@@ -60,7 +60,13 @@ export function TodosPageContent({
     currentUserId,
   );
 
-  const { isOnline, statusLabel } = useMemberPresence(members, currentUserId);
+  const { isOnline, otherMember, statusLabel } = useMemberPresence(
+    members,
+    currentUserId,
+  );
+  const otherMemberLabel = otherMember
+    ? getMemberLabel(otherMember.email)
+    : "Friend";
 
   useEffect(() => {
     const disconnect = chatGateway.connect();
@@ -106,9 +112,10 @@ export function TodosPageContent({
           <MemberPresenceLabel isOnline={isOnline} statusLabel={statusLabel} />
         </div>
         <TodosHeaderActions
-          members={members}
           memberId={activeMemberId}
           currentUserId={currentUserId}
+          isOtherOnline={isOnline}
+          otherMemberLabel={otherMemberLabel}
         />
       </header>
 

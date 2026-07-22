@@ -53,3 +53,28 @@ export async function sendChatMessage(body: string): Promise<ChatFormState> {
 
   return { message: message as ChatMessage };
 }
+
+export async function markChatRead(): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be signed in." };
+  }
+
+  const { error } = await supabase.from("chat_reads").upsert(
+    {
+      user_id: user.id,
+      last_read_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return {};
+}

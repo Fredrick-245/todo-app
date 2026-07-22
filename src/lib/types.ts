@@ -38,3 +38,8 @@ export type ChatMessage = {
   body: string;
   created_at: string;
 };
+
+export type ChatRead = {
+  user_id: string;
+  last_read_at: string;
+};

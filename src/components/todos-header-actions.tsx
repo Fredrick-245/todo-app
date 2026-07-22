@@ -3,22 +3,27 @@
 import { ChatButton } from "@/components/chat-button";
 import { ScoreHistoryButton } from "@/components/score-history-button";
 import { SignOutButton } from "@/components/sign-out-button";
-import type { AppMember } from "@/lib/allowed-users";
 
 type TodosHeaderActionsProps = {
-  members: AppMember[];
   memberId: string;
   currentUserId: string;
+  isOtherOnline: boolean;
+  otherMemberLabel: string;
 };
 
 export function TodosHeaderActions({
-  members,
   memberId,
   currentUserId,
+  isOtherOnline,
+  otherMemberLabel,
 }: TodosHeaderActionsProps) {
   return (
     <div className="flex items-center gap-1">
-      <ChatButton members={members} currentUserId={currentUserId} />
+      <ChatButton
+        currentUserId={currentUserId}
+        isOtherOnline={isOtherOnline}
+        otherMemberLabel={otherMemberLabel}
+      />
       <ScoreHistoryButton
         memberId={memberId}
         currentUserId={currentUserId}

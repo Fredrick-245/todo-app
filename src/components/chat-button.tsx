@@ -5,14 +5,14 @@ import { createPortal } from "react-dom";
 import { ArrowLeft, MessageCircle, Send, X } from "lucide-react";
 import { sendChatMessage } from "@/actions/chat";
 import { useRoomChat } from "@/hooks/use-room-chat";
-import type { AppMember } from "@/lib/allowed-users";
-import { getMemberLabel } from "@/lib/members";
+import { useUnreadChat } from "@/hooks/use-unread-chat";
 import { roomChatGateway } from "@/lib/room-chat-gateway";
 import type { ChatMessage } from "@/lib/types";
 
 type ChatButtonProps = {
-  members: AppMember[];
   currentUserId: string;
+  isOtherOnline: boolean;
+  otherMemberLabel: string;
 };
 
 function formatMessageTime(createdAt: string): string {
@@ -69,22 +69,21 @@ function groupMessagesByDate(messages: ChatMessage[]): MessageGroup[] {
   return groups;
 }
 
-export function ChatButton({ members, currentUserId }: ChatButtonProps) {
+export function ChatButton({
+  currentUserId,
+  isOtherOnline,
+  otherMemberLabel,
+}: ChatButtonProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [panelLayout, setPanelLayout] = useState({ top: 0, height: 0 });
+  const [useMobileKeyboardLayout, setUseMobileKeyboardLayout] = useState(false);
   const { messages, loading } = useRoomChat(open);
-
-  const otherMember = useMemo(
-    () => members.find((member) => member.id !== currentUserId) ?? null,
-    [members, currentUserId],
-  );
-  const otherLabel = otherMember
-    ? getMemberLabel(otherMember.email)
-    : "Chat";
+  const { unreadCount } = useUnreadChat(currentUserId, open);
 
   const messageGroups = useMemo(
     () => groupMessagesByDate(messages),
@@ -94,6 +93,57 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 639px)");
+    const updateLayoutMode = () => {
+      setUseMobileKeyboardLayout(mediaQuery.matches);
+    };
+
+    updateLayoutMode();
+    mediaQuery.addEventListener("change", updateLayoutMode);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateLayoutMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open || !useMobileKeyboardLayout) return;
+
+    const updatePanelLayout = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) {
+        setPanelLayout({ top: 0, height: window.innerHeight });
+        return;
+      }
+
+      setPanelLayout({
+        top: viewport.offsetTop,
+        height: viewport.height,
+      });
+    };
+
+    updatePanelLayout();
+    window.visualViewport?.addEventListener("resize", updatePanelLayout);
+    window.visualViewport?.addEventListener("scroll", updatePanelLayout);
+
+    return () => {
+      window.visualViewport?.removeEventListener("resize", updatePanelLayout);
+      window.visualViewport?.removeEventListener("scroll", updatePanelLayout);
+    };
+  }, [open, useMobileKeyboardLayout]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -111,9 +161,15 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || !useMobileKeyboardLayout) return;
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [open, messages]);
+  }, [open, messages, panelLayout.height, useMobileKeyboardLayout]);
+
+  const scrollMessagesToBottom = () => {
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    });
+  };
 
   const handleSend = () => {
     const trimmed = body.trim();
@@ -139,8 +195,18 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
   const modal =
     open && mounted
       ? createPortal(
-          <div className="fixed inset-0 z-[100] flex flex-col bg-slate-100 sm:items-center sm:justify-center sm:bg-black/25 sm:p-4">
-            <div className="flex h-dvh w-full max-w-lg flex-col overflow-hidden bg-slate-100 sm:h-[92dvh] sm:rounded-2xl sm:shadow-xl sm:ring-1 sm:ring-black/[0.05]">
+          <div className="fixed inset-0 z-[100] bg-slate-100 sm:bg-black/25">
+            <div
+              className="fixed left-0 right-0 mx-auto flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden bg-slate-100 sm:bottom-auto sm:top-1/2 sm:h-[92dvh] sm:max-h-[85dvh] sm:-translate-y-1/2 sm:rounded-2xl sm:shadow-xl sm:ring-1 sm:ring-black/[0.05]"
+              style={
+                useMobileKeyboardLayout && panelLayout.height
+                  ? {
+                      top: panelLayout.top,
+                      height: panelLayout.height,
+                    }
+                  : undefined
+              }
+            >
               <div className="flex shrink-0 items-center gap-3 border-b border-gray-200/80 bg-white px-3 py-3 sm:px-4">
                 <button
                   type="button"
@@ -152,9 +218,19 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
                 </button>
                 <div className="min-w-0 flex-1">
                   <h2 className="truncate text-base font-semibold text-gray-900">
-                    {otherLabel}
+                    New Us
                   </h2>
-                  <p className="text-xs text-gray-400">Shared chat room</p>
+                  <p className="flex items-center gap-1.5 text-xs text-gray-500">
+                    {isOtherOnline ? (
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full bg-green-500"
+                        aria-hidden
+                      />
+                    ) : null}
+                    <span>
+                      {otherMemberLabel} is {isOtherOnline ? "online" : "offline"}
+                    </span>
+                  </p>
                 </div>
                 <button
                   type="button"
@@ -220,7 +296,7 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
                 )}
               </div>
 
-              <div className="shrink-0 border-t border-gray-200/80 bg-white px-3 py-3 sm:px-4">
+              <div className="shrink-0 border-t border-gray-200/80 bg-white px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
                 <div className="flex items-end gap-2">
                   <textarea
                     value={body}
@@ -232,6 +308,7 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
                     enterKeyHint="send"
                     autoComplete="off"
                     className="max-h-28 min-h-11 flex-1 resize-none rounded-3xl border border-gray-200 bg-slate-50 px-4 py-2.5 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-300 focus:outline-none disabled:opacity-50 sm:text-sm"
+                    onFocus={scrollMessagesToBottom}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
@@ -263,11 +340,18 @@ export function ChatButton({ members, currentUserId }: ChatButtonProps) {
     <>
       <button
         type="button"
-        aria-label="Open chat"
+        aria-label={
+          unreadCount > 0 ? `Open chat, ${unreadCount} unread` : "Open chat"
+        }
         onClick={() => setOpen(true)}
         className="relative z-10 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-white hover:text-gray-600 sm:p-2"
       >
         <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={1.75} />
+        {unreadCount > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        ) : null}
       </button>
       {modal}
     </>
