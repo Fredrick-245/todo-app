@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { Send } from "lucide-react";
 import { createComment } from "@/actions/comments";
+import { chatGateway } from "@/lib/chat-gateway";
 import { useTodoComments } from "@/hooks/use-todo-comments";
 import { useTypingIndicator } from "@/hooks/use-typing-indicator";
 import type { AppMember } from "@/lib/allowed-users";
@@ -77,6 +78,10 @@ export function TodoComments({
       if (result.error) {
         setError(result.error);
         return;
+      }
+
+      if (result.comment) {
+        chatGateway.publishComment(result.comment);
       }
 
       setBody("");

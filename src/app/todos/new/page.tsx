@@ -1,6 +1,4 @@
 import { redirect } from "next/navigation";
-import { createTodo } from "@/actions/todos";
-import { TodoForm } from "@/components/todo-form";
 import type { AppMember } from "@/lib/allowed-users";
 import { resolveSelectedMemberId } from "@/lib/members";
 import { createClient } from "@/lib/supabase/server";
@@ -24,16 +22,5 @@ export default async function NewTodoPage({ searchParams }: NewTodoPageProps) {
   const members = (membersData ?? []) as AppMember[];
   const ownerId = resolveSelectedMemberId(members, memberParam, user?.id);
 
-  if (!ownerId || ownerId !== user?.id) {
-    redirect(`/todos?member=${user?.id ?? ownerId ?? ""}`);
-  }
-
-  return (
-    <TodoForm
-      title="Add Todo"
-      action={createTodo}
-      ownerId={ownerId}
-      cancelHref={`/todos?member=${ownerId}`}
-    />
-  );
+  redirect(`/todos?member=${ownerId ?? user?.id ?? ""}`);
 }

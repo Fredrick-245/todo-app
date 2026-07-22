@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { chatGateway } from "@/lib/chat-gateway";
 import { createClient } from "@/lib/supabase/client";
 import type { TodoComment } from "@/lib/types";
 
@@ -31,49 +32,28 @@ export function useTodoComments(todoId: string, enabled: boolean) {
   useEffect(() => {
     if (!enabled) return;
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`todo-comments:${todoId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "todo_comments",
-          filter: `todo_id=eq.${todoId}`,
-        },
-        (payload) => {
-          const comment = payload.new as TodoComment;
-          setComments((current) => {
-            if (current.some((item) => item.id === comment.id)) {
-              return current;
-            }
-            return [...current, comment];
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "todo_comments",
-          filter: `todo_id=eq.${todoId}`,
-        },
-        (payload) => {
-          const deleted = payload.old as Partial<TodoComment>;
-          if (!deleted.id) return;
-          setComments((current) =>
-            current.filter((item) => item.id !== deleted.id),
-          );
-        },
-      )
-      .subscribe();
+    const disconnect = chatGateway.connect();
+    const unsubscribe = chatGateway.subscribeTodo(todoId, (event) => {
+      if (event.type === "insert") {
+        setComments((current) => {
+          if (current.some((item) => item.id === event.comment.id)) {
+            return current;
+          }
+          return [...current, event.comment];
+        });
+        return;
+      }
+
+      setComments((current) =>
+        current.filter((item) => item.id !== event.comment.id),
+      );
+    });
 
     return () => {
-      void supabase.removeChannel(channel);
+      unsubscribe();
+      disconnect();
     };
-  }, [todoId, enabled]);
+  }, [enabled, todoId]);
 
   return { comments, loading };
 }

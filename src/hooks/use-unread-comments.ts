@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { markCommentsRead as markCommentsReadAction } from "@/actions/comments";
+import { chatGateway } from "@/lib/chat-gateway";
 import { computeUnreadTodoIds } from "@/lib/comment-reads";
 import { createClient } from "@/lib/supabase/client";
 import type { Todo } from "@/lib/types";
@@ -59,42 +60,30 @@ export function useUnreadComments(
   useEffect(() => {
     if (imageTodoIds.length === 0) return;
 
-    const supabase = createClient();
-    const channel = supabase
-      .channel("todo-comment-unread")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "todo_comments",
-        },
-        (payload) => {
-          const comment = payload.new as {
-            todo_id: string;
-            author_id: string;
-          };
+    const disconnect = chatGateway.connect();
+    const unsubscribe = chatGateway.subscribeAll((event) => {
+      if (event.type !== "insert") return;
 
-          if (!imageTodoIds.includes(comment.todo_id)) return;
-          if (comment.author_id === currentUserId) return;
+      const comment = event.comment;
+      if (!imageTodoIds.includes(comment.todo_id)) return;
+      if (comment.author_id === currentUserId) return;
 
-          if (expandedTodoIdsRef.current.has(comment.todo_id)) {
-            void markCommentsReadAction(comment.todo_id);
-            return;
-          }
+      if (expandedTodoIdsRef.current.has(comment.todo_id)) {
+        void markCommentsReadAction(comment.todo_id);
+        return;
+      }
 
-          setUnreadTodoIds((current) => {
-            if (current.has(comment.todo_id)) return current;
-            const next = new Set(current);
-            next.add(comment.todo_id);
-            return next;
-          });
-        },
-      )
-      .subscribe();
+      setUnreadTodoIds((current) => {
+        if (current.has(comment.todo_id)) return current;
+        const next = new Set(current);
+        next.add(comment.todo_id);
+        return next;
+      });
+    });
 
     return () => {
-      void supabase.removeChannel(channel);
+      unsubscribe();
+      disconnect();
     };
   }, [currentUserId, expandedTodoIdsKey, imageTodoIds, imageTodoIdsKey]);
 

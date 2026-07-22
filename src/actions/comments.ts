@@ -1,9 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import type { TodoComment } from "@/lib/types";
 
 export type CommentFormState = {
   error?: string;
+  comment?: TodoComment;
 };
 
 export async function createComment(
@@ -43,17 +45,21 @@ export async function createComment(
     return { error: "Comments are only available on todos with images." };
   }
 
-  const { error } = await supabase.from("todo_comments").insert({
-    todo_id: todoId,
-    author_id: user.id,
-    body: trimmed,
-  });
+  const { data: comment, error } = await supabase
+    .from("todo_comments")
+    .insert({
+      todo_id: todoId,
+      author_id: user.id,
+      body: trimmed,
+    })
+    .select("*")
+    .single();
 
   if (error) {
     return { error: error.message };
   }
 
-  return {};
+  return { comment };
 }
 
 export async function markCommentsRead(todoId: string): Promise<CommentFormState> {

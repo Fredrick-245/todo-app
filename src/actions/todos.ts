@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { TodoPriority } from "@/lib/types";
 
 export type TodoFormState = {
   error?: string;
+  success?: boolean;
 };
 
 function parsePriority(value: FormDataEntryValue | null): TodoPriority | null {
@@ -171,7 +171,9 @@ export async function createTodo(
   }
 
   revalidatePath("/todos");
-  redirect(todosPath(validOwnerId));
+  revalidatePath(todosPath(validOwnerId));
+
+  return { success: true };
 }
 
 export async function updateTodo(
@@ -212,7 +214,9 @@ export async function updateTodo(
   }
 
   revalidatePath("/todos");
-  redirect(todosPath(validOwnerId));
+  revalidatePath(todosPath(validOwnerId));
+
+  return { success: true };
 }
 
 export async function toggleTodo(

@@ -1,9 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useActionState, useState } from "react";
-import { X } from "lucide-react";
-import { AppShell } from "@/components/app-shell";
+import { useActionState, useEffect, useState } from "react";
 import { PrioritySlider } from "@/components/priority-slider";
 import { TODO_LABELS } from "@/lib/constants";
 import type { Todo, TodoPriority } from "@/lib/types";
@@ -12,20 +9,18 @@ import type { TodoFormState } from "@/actions/todos";
 type TodoFormProps = {
   todo?: Todo;
   ownerId: string;
-  cancelHref: string;
+  onSuccess?: () => void;
   action: (
     prev: TodoFormState,
     formData: FormData,
   ) => Promise<TodoFormState>;
-  title: string;
 };
 
 export function TodoForm({
   todo,
   ownerId,
-  cancelHref,
+  onSuccess,
   action,
-  title,
 }: TodoFormProps) {
   const [state, formAction, isPending] = useActionState(action, {});
   const [priority, setPriority] = useState<TodoPriority>(
@@ -33,27 +28,15 @@ export function TodoForm({
   );
   const [label, setLabel] = useState(todo?.label ?? "");
 
-  return (
-    <AppShell>
-      <div className="flex h-full w-full flex-col overflow-hidden bg-white">
-        <form
-          action={formAction}
-          className="flex h-full w-full flex-col overflow-hidden px-5 pb-6 pt-8"
-        >
-      <div className="mb-8 flex items-start justify-between">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-          {title}
-        </h1>
-        <Link
-          href={cancelHref}
-          aria-label="Close"
-          className="mt-1 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-50 hover:text-gray-600"
-        >
-          <X className="h-6 w-6" strokeWidth={1.75} />
-        </Link>
-      </div>
+  useEffect(() => {
+    if (state.success) {
+      onSuccess?.();
+    }
+  }, [state.success, onSuccess]);
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
+  return (
+    <form action={formAction} className="flex min-h-0 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto overscroll-contain sm:gap-6">
         <label className="block">
           <span className="mb-2 block text-sm text-gray-500">To-do</span>
           <input
@@ -62,7 +45,7 @@ export function TodoForm({
             required
             defaultValue={todo?.title ?? ""}
             placeholder="What needs to be done?"
-            className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-3 text-[15px] text-gray-900 outline-none transition placeholder:text-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+            className="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-3 text-base text-gray-900 outline-none transition placeholder:text-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 sm:text-[15px]"
           />
         </label>
 
@@ -74,7 +57,7 @@ export function TodoForm({
               required
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3.5 py-3 text-[15px] text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+              className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3.5 py-3 text-base text-gray-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 sm:text-[15px]"
             >
               <option value="" disabled>
                 Select Label
@@ -119,12 +102,10 @@ export function TodoForm({
       <button
         type="submit"
         disabled={isPending}
-        className="mt-8 w-full rounded-2xl bg-blue-500 py-3.5 text-base font-semibold text-white transition hover:bg-blue-600 disabled:opacity-60"
+        className="mt-6 w-full shrink-0 rounded-2xl bg-blue-500 py-3.5 text-base font-semibold text-white transition hover:bg-blue-600 disabled:opacity-60 sm:mt-8"
       >
         {isPending ? "Saving..." : "Done"}
       </button>
-        </form>
-      </div>
-    </AppShell>
+    </form>
   );
 }

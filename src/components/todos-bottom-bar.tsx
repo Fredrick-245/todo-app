@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Plus } from "lucide-react";
 import type { AppMember } from "@/lib/allowed-users";
 import { getMemberLabel } from "@/lib/members";
@@ -8,15 +7,15 @@ import { getMemberLabel } from "@/lib/members";
 type TodosBottomBarProps = {
   members: AppMember[];
   selectedMemberId: string;
-  currentUserId: string;
   onMemberChange: (memberId: string) => void;
+  onAddTodo: () => void;
 };
 
 export function TodosBottomBar({
   members,
   selectedMemberId,
-  currentUserId,
   onMemberChange,
+  onAddTodo,
 }: TodosBottomBarProps) {
   return (
     <div className="flex w-full items-center gap-3">
@@ -50,13 +49,14 @@ export function TodosBottomBar({
         </div>
       ) : null}
 
-      <Link
-        href={`/todos/new?member=${currentUserId}`}
+      <button
+        type="button"
         aria-label="Add todo"
+        onClick={onAddTodo}
         className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-600 sm:h-14 sm:w-14"
       >
         <Plus className="h-5 w-5 sm:h-7 sm:w-7" strokeWidth={2.25} />
-      </Link>
+      </button>
     </div>
   );
 }

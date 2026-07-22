@@ -26,3 +26,8 @@ export type TodoCommentRead = {
   todo_id: string;
   last_read_at: string;
 };
+
+export type MemberActivity = {
+  user_id: string;
+  last_seen_at: string;
+};

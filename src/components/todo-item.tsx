@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useRef, useState, useTransition } from "react";
-import { Camera, ChevronDown, CircleX } from "lucide-react";
+import { Camera, ChevronDown, CircleX, Pencil } from "lucide-react";
 import { deleteTodo, setTodoImagePath, toggleTodo } from "@/actions/todos";
 import { useRefreshTodos } from "@/components/todos-cache-context";
 import { PriorityBadge } from "@/components/priority-badge";
@@ -21,6 +20,7 @@ type TodoItemProps = {
   expanded: boolean;
   hasUnreadComments: boolean;
   onExpandedChange: (value: boolean | ((prev: boolean) => boolean)) => void;
+  onEdit?: (todo: Todo) => void;
 };
 
 export function TodoItem({
@@ -31,6 +31,7 @@ export function TodoItem({
   expanded,
   hasUnreadComments,
   onExpandedChange,
+  onEdit,
 }: TodoItemProps) {
   const refreshTodos = useRefreshTodos();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -118,8 +119,21 @@ export function TodoItem({
       >
         {todo.label}
       </p>
-      <div className="mt-2">
+      <div className="mt-2 flex items-center gap-2">
         <PriorityBadge priority={todo.priority} />
+        {canManageTodo && onEdit ? (
+          <button
+            type="button"
+            aria-label={`Edit ${todo.title}`}
+            className="rounded-md p-1 text-gray-300 transition-colors hover:bg-white/80 hover:text-blue-500"
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(todo);
+            }}
+          >
+            <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+        ) : null}
       </div>
     </>
   );
@@ -148,13 +162,6 @@ export function TodoItem({
     >
       {summary}
     </div>
-  ) : canManageTodo ? (
-    <Link
-      href={`/todos/${todo.id}/edit?member=${memberId}`}
-      className="min-w-0 flex-1"
-    >
-      {summary}
-    </Link>
   ) : (
     <div className="min-w-0 flex-1">{summary}</div>
   );
@@ -270,15 +277,6 @@ export function TodoItem({
             members={members}
             currentUserId={currentUserId}
           />
-
-          {canManageTodo ? (
-            <Link
-              href={`/todos/${todo.id}/edit?member=${memberId}`}
-              className="mt-3 inline-block text-xs font-medium text-blue-500"
-            >
-              Edit
-            </Link>
-          ) : null}
         </div>
       ) : null}
 

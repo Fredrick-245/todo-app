@@ -1,16 +1,26 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { MemberPresenceLabel } from "@/components/member-presence-label";
+import { TodoFormModal } from "@/components/todo-form-modal";
 import { TodoListSkeleton } from "@/components/todo-list-skeleton";
 import { TodoItem } from "@/components/todo-item";
 import { TodosBottomBar } from "@/components/todos-bottom-bar";
 import { TodosCacheProvider } from "@/components/todos-cache-context";
 import { TodosHeaderActions } from "@/components/todos-header-actions";
+import { useMemberPresence } from "@/hooks/use-member-presence";
 import { useTodosCache } from "@/hooks/use-todos-cache";
 import { useUnreadComments } from "@/hooks/use-unread-comments";
+import { chatGateway } from "@/lib/chat-gateway";
 import type { AppMember } from "@/lib/allowed-users";
 import { getMemberLabel } from "@/lib/members";
 import type { TodosByMember } from "@/lib/todos-cache";
+import type { Todo } from "@/lib/types";
+
+type TodoFormModalState =
+  | { mode: "add" }
+  | { mode: "edit"; todo: Todo }
+  | null;
 
 type TodosPageContentProps = {
   members: AppMember[];
@@ -42,12 +52,20 @@ export function TodosPageContent({
   const [expandedTodoIds, setExpandedTodoIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [formModal, setFormModal] = useState<TodoFormModalState>(null);
 
   const { unreadTodoIds, markCommentsRead } = useUnreadComments(
     activeTodos,
     expandedTodoIds,
     currentUserId,
   );
+
+  const { isOnline, statusLabel } = useMemberPresence(members, currentUserId);
+
+  useEffect(() => {
+    const disconnect = chatGateway.connect();
+    return disconnect;
+  }, []);
 
   const handleExpandedChange = useCallback(
     (todoId: string, value: boolean | ((prev: boolean) => boolean)) => {
@@ -72,13 +90,21 @@ export function TodosPageContent({
     [markCommentsRead],
   );
 
+  const handleFormSuccess = useCallback(() => {
+    setFormModal(null);
+    void refreshMemberIfChanged(activeMemberId);
+  }, [activeMemberId, refreshMemberIfChanged]);
+
   return (
     <TodosCacheProvider refreshMember={refreshMemberIfChanged}>
       <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex shrink-0 items-center justify-between px-4 pb-3 pt-6 sm:px-5 sm:pb-4 sm:pt-8">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          Todos
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            Todos
+          </h1>
+          <MemberPresenceLabel isOnline={isOnline} statusLabel={statusLabel} />
+        </div>
         <TodosHeaderActions
           memberId={activeMemberId}
           currentUserId={currentUserId}
@@ -113,6 +139,11 @@ export function TodosPageContent({
                   expanded={expandedTodoIds.has(todo.id)}
                   hasUnreadComments={unreadTodoIds.has(todo.id)}
                   onExpandedChange={(value) => handleExpandedChange(todo.id, value)}
+                  onEdit={
+                    todo.created_by === currentUserId
+                      ? (item) => setFormModal({ mode: "edit", todo: item })
+                      : undefined
+                  }
                 />
               ))}
 
@@ -133,6 +164,11 @@ export function TodosPageContent({
                   expanded={expandedTodoIds.has(todo.id)}
                   hasUnreadComments={unreadTodoIds.has(todo.id)}
                   onExpandedChange={(value) => handleExpandedChange(todo.id, value)}
+                  onEdit={
+                    todo.created_by === currentUserId
+                      ? (item) => setFormModal({ mode: "edit", todo: item })
+                      : undefined
+                  }
                 />
               ))}
           </div>
@@ -143,11 +179,20 @@ export function TodosPageContent({
         <TodosBottomBar
           members={members}
           selectedMemberId={activeMemberId}
-          currentUserId={currentUserId}
           onMemberChange={switchMember}
+          onAddTodo={() => setFormModal({ mode: "add" })}
         />
       </div>
       </div>
+
+      <TodoFormModal
+        open={formModal !== null}
+        mode={formModal?.mode ?? "add"}
+        ownerId={currentUserId}
+        todo={formModal?.mode === "edit" ? formModal.todo : undefined}
+        onClose={() => setFormModal(null)}
+        onSuccess={handleFormSuccess}
+      />
     </TodosCacheProvider>
   );
 }
